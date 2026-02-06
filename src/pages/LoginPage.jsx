@@ -3,6 +3,9 @@ import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { Link } from "react-router-dom";
 
+// ✅ LIVE BACKEND URL (Last mein slash '/' nahi lagana hai)
+const BACKEND_URL = "https://note-app-backend-khaki.vercel.app";
+
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
 
@@ -13,19 +16,19 @@ const Login = () => {
     const loadingToast = toast.loading("Logging in...");
 
     try {
-      // Backend request
-      const res = await axios.post("http://localhost:3000/api/auth/login", formData, {
+      // ✅ Updated URL: Ab Live Server par request jayegi
+      const res = await axios.post(`${BACKEND_URL}/api/auth/login`, formData, {
         withCredentials: true,
       });
 
       if (res.status === 200) {
         toast.success("Login Successful!", { id: loadingToast });
         
-        // Data save kar rahe hain (Backend se user aaye ya saveUsers ya kuch aur)
+        // Data save kar rahe hain
         const userData = res.data.user || res.data.saveUsers || { username: "User" };
         localStorage.setItem("user", JSON.stringify(userData));
 
-        // 🔥 FORCE REDIRECT (Ye aapko Home par bhej dega)
+        // 🔥 FORCE REDIRECT
         setTimeout(() => {
             window.location.href = "/";
         }, 500);
@@ -38,7 +41,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen w-full bg-[#030712] relative overflow-hidden text-white font-sans flex justify-center items-center px-4">
-      {/* Background Blobs (Same as Home) */}
+      {/* Background Blobs */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
       

@@ -4,6 +4,9 @@ import toast, { Toaster } from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import BackgroundLayout from "../components/BackgroundLayout";
 
+
+const BACKEND_URL = "https://note-app-backend-khaki.vercel.app";
+
 const Register = () => {
   const [formData, setFormData] = useState({ username: "", email: "", password: "" });
   const navigate = useNavigate();
@@ -15,7 +18,8 @@ const Register = () => {
     const loadingToast = toast.loading("Creating account...");
 
     try {
-      const res = await axios.post("http://localhost:3000/api/auth/register", formData);
+      // ✅ Updated URL: Ab Live Server par request jayegi
+      const res = await axios.post(`${BACKEND_URL}/api/auth/register`, formData);
       
       if (res.status === 201) {
         toast.success("Account Created! Please Login.", { id: loadingToast });

@@ -5,6 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Edit, LogOut, Search, X, Layers, AlertTriangle } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
+
+const BACKEND_URL = "https://note-app-backend-khaki.vercel.app";
+
 const Home = () => {
   const [notes, setNotes] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
@@ -41,7 +44,8 @@ const Home = () => {
 
   const fetchNotes = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/api/show-notes", { withCredentials: true });
+      // ✅ Updated URL
+      const response = await axios.get(`${BACKEND_URL}/api/show-notes`, { withCredentials: true });
       setNotes(response.data.showNote);
       setFilteredNotes(response.data.showNote);
     } catch (error) {
@@ -58,15 +62,17 @@ const Home = () => {
     const loadingToast = toast.loading(isEditing ? "Updating..." : "Creating...");
     try {
       if (isEditing) {
+        // ✅ Updated URL (PATCH)
         await axios.patch(
-            `http://localhost:3000/api/update-note/${editId}`, 
+            `${BACKEND_URL}/api/update-note/${editId}`, 
             { title, description }, 
             { withCredentials: true }
         );
         toast.success("Note Updated!", { id: loadingToast });
       } else {
+        // ✅ Updated URL (POST)
         await axios.post(
-            "http://localhost:3000/api/add-notes", 
+            `${BACKEND_URL}/api/add-notes`, 
             { title, description }, 
             { withCredentials: true }
         );
@@ -91,7 +97,8 @@ const Home = () => {
     if (!noteToDelete) return;
 
     try {
-      await axios.delete(`http://localhost:3000/api/delete-note/${noteToDelete}`, { withCredentials: true });
+      // ✅ Updated URL (DELETE)
+      await axios.delete(`${BACKEND_URL}/api/delete-note/${noteToDelete}`, { withCredentials: true });
       
       setNotes(notes.filter((n) => n._id !== noteToDelete));
       toast.success("Note Deleted Successfully");
