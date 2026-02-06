@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Edit, LogOut, Search, X, Layers, AlertTriangle } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
-
 const BACKEND_URL = "https://note-app-backend-khaki.vercel.app";
 
 const Home = () => {
@@ -26,8 +25,14 @@ const Home = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+  // ✅ 1. Security Check & Initial Fetch
   useEffect(() => {
-    fetchNotes();
+    // Agar localStorage mein user nahi hai, toh seedha login par bhej do
+    if (!localStorage.getItem("user")) {
+      navigate("/login");
+    } else {
+      fetchNotes();
+    }
   }, []);
 
   useEffect(() => {
@@ -44,12 +49,12 @@ const Home = () => {
 
   const fetchNotes = async () => {
     try {
-      // ✅ Updated URL
       const response = await axios.get(`${BACKEND_URL}/api/show-notes`, { withCredentials: true });
       setNotes(response.data.showNote);
       setFilteredNotes(response.data.showNote);
     } catch (error) {
       if (error.response && error.response.status === 401) {
+          localStorage.removeItem("user");
           navigate("/login");
       }
     }
@@ -62,7 +67,6 @@ const Home = () => {
     const loadingToast = toast.loading(isEditing ? "Updating..." : "Creating...");
     try {
       if (isEditing) {
-        // ✅ Updated URL (PATCH)
         await axios.patch(
             `${BACKEND_URL}/api/update-note/${editId}`, 
             { title, description }, 
@@ -70,7 +74,6 @@ const Home = () => {
         );
         toast.success("Note Updated!", { id: loadingToast });
       } else {
-        // ✅ Updated URL (POST)
         await axios.post(
             `${BACKEND_URL}/api/add-notes`, 
             { title, description }, 
@@ -86,24 +89,18 @@ const Home = () => {
     }
   };
 
-  // 1. Jab Dustbin par click hoga -> Sirf Popup khulega
   const confirmDeleteClick = (id) => {
     setNoteToDelete(id);
     setShowDeleteModal(true);
   };
 
-  // 2. Jab Popup me "Yes, Delete" dabayenge -> Tab API call hogi
   const handleDeleteConfirm = async () => {
     if (!noteToDelete) return;
 
     try {
-      // ✅ Updated URL (DELETE)
       await axios.delete(`${BACKEND_URL}/api/delete-note/${noteToDelete}`, { withCredentials: true });
-      
       setNotes(notes.filter((n) => n._id !== noteToDelete));
       toast.success("Note Deleted Successfully");
-      
-      // Modal band karo aur state clear karo
       setShowDeleteModal(false);
       setNoteToDelete(null);
     } catch (error) {
@@ -128,9 +125,25 @@ const Home = () => {
     setShowForm(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    navigate("/login");
+  // ✅ 2. Updated handleLogout with API Call
+  const handleLogout = async () => {
+    const loadingToast = toast.loading("Logging out...");
+    try {
+      // Backend ko bolo cookie clear kare
+      await axios.post(`${BACKEND_URL}/api/auth/logout`, {}, { withCredentials: true });
+      
+      // Client side data clear karo
+      localStorage.removeItem("user");
+      toast.success("Logged out!", { id: loadingToast });
+      
+      // Page refresh karke login par bhej do (State clean ho jayegi)
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout Error:", error);
+      // Fail hone par bhi user ko login par bhej do security ke liye
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    }
   };
 
   return (

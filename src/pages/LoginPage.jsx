@@ -1,13 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; 
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; 
 
-// ✅ LIVE BACKEND URL (Last mein slash '/' nahi lagana hai)
 const BACKEND_URL = "https://note-app-backend-khaki.vercel.app";
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const navigate = useNavigate(); 
+
+  
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (user) {
+      navigate("/"); 
+    }
+  }, [navigate]);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -16,7 +24,6 @@ const Login = () => {
     const loadingToast = toast.loading("Logging in...");
 
     try {
-      // ✅ Updated URL: Ab Live Server par request jayegi
       const res = await axios.post(`${BACKEND_URL}/api/auth/login`, formData, {
         withCredentials: true,
       });
@@ -24,14 +31,12 @@ const Login = () => {
       if (res.status === 200) {
         toast.success("Login Successful!", { id: loadingToast });
         
-        // Data save kar rahe hain
         const userData = res.data.user || res.data.saveUsers || { username: "User" };
         localStorage.setItem("user", JSON.stringify(userData));
 
-        // 🔥 FORCE REDIRECT
         setTimeout(() => {
-            window.location.href = "/";
-        }, 500);
+            window.location.replace("/"); 
+        }, 800);
       }
     } catch (error) {
       console.log(error);
