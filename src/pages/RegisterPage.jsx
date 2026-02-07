@@ -1,40 +1,66 @@
 import React, { useState } from "react";
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
-import { Globe, ShieldCheck, Zap, UserPlus } from "lucide-react";
+import { Globe, ShieldCheck, Zap, UserPlus, AlertCircle } from "lucide-react";
 
 const BACKEND_URL = "https://note-app-backend-khaki.vercel.app";
 
 const Register = () => {
   const [formData, setFormData] = useState({ username: "", email: "", password: "" });
+  
+
+  const [errors, setErrors] = useState({});
+  const [generalError, setGeneralError] = useState(""); // 
+  const [loading, setLoading] = useState(false);
+  
   const navigate = useNavigate();
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    
+    
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: null });
+    }
+    if (generalError) setGeneralError("");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const loadingToast = toast.loading("Creating account...");
+    setErrors({}); 
+    setGeneralError("");
+    setLoading(true);
 
     try {
       const res = await axios.post(`${BACKEND_URL}/api/auth/register`, formData);
       
-      if (res.status === 201) {
-        toast.success("Account Created! Please Login.", { id: loadingToast });
-        setTimeout(() => navigate("/login"), 1500);
+      if (res.data.success) {
+        
+        navigate("/login");
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Registration Failed", { id: loadingToast });
+      const errorData = error.response?.data;
+
+      
+      if (errorData?.error) {
+        setErrors(errorData.error); 
+      } 
+     
+      else if (errorData?.message) {
+        setGeneralError(errorData.message);
+      } else {
+        setGeneralError("Something went wrong. Please try again.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    // h-screen + overflow-hidden to prevent scrolling
     <div className="h-screen w-full bg-[#f6f7eb] flex items-center justify-center p-0 sm:p-4 lg:p-8 overflow-hidden font-sans">
       
-      <Toaster position="top-center" />
+      
 
-      {/* Main Container - Matches Login Page Styling */}
       <div className="w-full max-w-6xl h-full lg:h-[85vh] grid grid-cols-1 lg:grid-cols-2 bg-white rounded-none lg:rounded-[2.5rem] overflow-hidden shadow-2xl border border-[#393e41]/5 relative z-10">
         
         {/* --- LEFT SIDE: REGISTER FORM --- */}
@@ -51,6 +77,8 @@ const Register = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            
+            {/* --- USERNAME FIELD --- */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#393e41]/80 ml-1 uppercase tracking-wider">Username</label>
               <input
@@ -58,11 +86,19 @@ const Register = () => {
                 name="username"
                 placeholder="Your name"
                 onChange={handleChange}
-                className="w-full bg-[#f6f7eb] border-2 border-transparent text-[#393e41] p-4 rounded-xl focus:outline-none focus:border-[#e94f37] transition-all placeholder:text-[#393e41]/30"
-                required
+                // 👇 Red Border Logic
+                className={`w-full bg-[#f6f7eb] border-2 text-[#393e41] p-4 rounded-xl focus:outline-none transition-all placeholder:text-[#393e41]/30 
+                  ${errors.username ? "border-red-500 focus:border-red-500 bg-red-50" : "border-transparent focus:border-[#e94f37]"}`}
               />
+              
+              {errors.username && (
+                <p className="text-red-500 text-xs font-bold ml-1 flex items-center gap-1 animate-pulse">
+                  <AlertCircle size={12} /> {errors.username[0]}
+                </p>
+              )}
             </div>
 
+            {/* --- EMAIL FIELD --- */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#393e41]/80 ml-1 uppercase tracking-wider">Email Address</label>
               <input
@@ -70,11 +106,18 @@ const Register = () => {
                 name="email"
                 placeholder="name@example.com"
                 onChange={handleChange}
-                className="w-full bg-[#f6f7eb] border-2 border-transparent text-[#393e41] p-4 rounded-xl focus:outline-none focus:border-[#e94f37] transition-all placeholder:text-[#393e41]/30"
-                required
+                className={`w-full bg-[#f6f7eb] border-2 text-[#393e41] p-4 rounded-xl focus:outline-none transition-all placeholder:text-[#393e41]/30 
+                  ${errors.email ? "border-red-500 focus:border-red-500 bg-red-50" : "border-transparent focus:border-[#e94f37]"}`}
               />
+            
+              {errors.email && (
+                <p className="text-red-500 text-xs font-bold ml-1 flex items-center gap-1 animate-pulse">
+                  <AlertCircle size={12} /> {errors.email[0]}
+                </p>
+              )}
             </div>
 
+            {/* --- PASSWORD FIELD --- */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#393e41]/80 ml-1 uppercase tracking-wider">Password</label>
               <input
@@ -82,16 +125,30 @@ const Register = () => {
                 name="password"
                 placeholder="••••••••"
                 onChange={handleChange}
-                className="w-full bg-[#f6f7eb] border-2 border-transparent text-[#393e41] p-4 rounded-xl focus:outline-none focus:border-[#e94f37] transition-all placeholder:text-[#393e41]/30"
-                required
+                className={`w-full bg-[#f6f7eb] border-2 text-[#393e41] p-4 rounded-xl focus:outline-none transition-all placeholder:text-[#393e41]/30 
+                  ${errors.password ? "border-red-500 focus:border-red-500 bg-red-50" : "border-transparent focus:border-[#e94f37]"}`}
               />
+              {/* 👇 Field ke niche Error Message (Jaise: "Password cannot contain spaces") */}
+              {errors.password && (
+                <p className="text-red-500 text-xs font-bold ml-1 flex items-center gap-1 animate-pulse">
+                  <AlertCircle size={12} /> {errors.password[0]}
+                </p>
+              )}
             </div>
+
+           
+            {generalError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm text-center font-bold">
+                {generalError}
+              </div>
+            )}
             
             <button
               type="submit"
-              className="w-full bg-[#e94f37] hover:bg-[#d13d28] text-[#f6f7eb] font-bold py-4 rounded-xl shadow-lg shadow-[#e94f37]/20 transition-all duration-300 mt-4 active:scale-95"
+              disabled={loading}
+              className="w-full bg-[#e94f37] hover:bg-[#d13d28] text-[#f6f7eb] font-bold py-4 rounded-xl shadow-lg shadow-[#e94f37]/20 transition-all duration-300 mt-4 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Sign Up
+              {loading ? "Creating Account..." : "Sign Up"}
             </button>
           </form>
 
@@ -100,14 +157,10 @@ const Register = () => {
           </p>
         </div>
 
-        {/* --- RIGHT SIDE: THEMED VISUAL (Matches Login) --- */}
+        {/* --- RIGHT SIDE: VISUAL (Same as before) --- */}
         <div className="hidden lg:flex bg-[#393e41] flex-col items-center justify-center p-12 relative overflow-hidden border-l border-[#f6f7eb]/5">
-          
-          {/* Subtle Background Glows */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#e94f37]/5 rounded-full blur-[100px]" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#f6f7eb]/5 rounded-full blur-[100px]" />
-          
-          {/* Central Rotating Globe */}
           <div className="relative mb-10 scale-90">
             <div className="absolute inset-0 bg-[#e94f37]/20 blur-[60px] rounded-full" />
             <Globe size={220} className="text-[#f6f7eb]/5 animate-[spin_40s_linear_infinite]" />
@@ -115,15 +168,12 @@ const Register = () => {
                 <Globe size={110} className="text-[#e94f37] drop-shadow-[0_0_15px_rgba(233,79,55,0.3)]" />
             </div>
           </div>
-
           <div className="text-center space-y-4 relative z-10">
             <h2 className="text-2xl font-bold text-[#f6f7eb]">Join NoteMaster</h2>
             <p className="text-[#f6f7eb]/40 max-w-xs mx-auto text-sm leading-relaxed">
               Create an account and sync your thoughts across the globe with zero friction.
             </p>
           </div>
-
-          {/* Feature Badges */}
           <div className="flex gap-4 mt-12">
             <div className="bg-white/5 px-5 py-2 rounded-xl border border-white/5 flex items-center gap-2">
                 <ShieldCheck size={16} className="text-[#e94f37]" />
@@ -135,7 +185,6 @@ const Register = () => {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

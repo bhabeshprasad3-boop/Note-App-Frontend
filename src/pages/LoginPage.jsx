@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react"; 
 import axios from "axios";
-import toast, { Toaster } from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom"; 
-import { Globe, ShieldCheck, Zap, PenTool } from "lucide-react"; 
+import { Globe, ShieldCheck, Zap, PenTool, AlertCircle } from "lucide-react"; 
 
 const BACKEND_URL = "https://note-app-backend-khaki.vercel.app";
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState({});
+  const [generalError, setGeneralError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate(); 
 
   useEffect(() => {
@@ -17,11 +19,20 @@ const Login = () => {
     }
   }, [navigate]);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: null });
+    }
+    if (generalError) setGeneralError("");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const loadingToast = toast.loading("Logging in...");
+    setErrors({});
+    setGeneralError("");
+    setLoading(true);
 
     try {
       const res = await axios.post(`${BACKEND_URL}/api/auth/login`, formData, {
@@ -29,31 +40,30 @@ const Login = () => {
       });
 
       if (res.status === 200) {
-        toast.success("Login Successful!", { id: loadingToast });
-        
         const userData = res.data.user || res.data.saveUsers || { username: "User" };
         localStorage.setItem("user", JSON.stringify(userData));
-
-        setTimeout(() => {
-            window.location.replace("/"); 
-        }, 800);
+        window.location.replace("/"); 
       }
     } catch (error) {
-      console.log(error);
-      toast.error(error.response?.data?.message || "Login Failed", { id: loadingToast });
+      const errorData = error.response?.data;
+
+      if (errorData?.error) {
+        setErrors(errorData.error);
+      } else if (errorData?.message) {
+        setGeneralError(errorData.message);
+      } else {
+        setGeneralError("Something went wrong. Please try again.");
+      }
+    } finally {
+        setLoading(false);
     }
   };
 
   return (
-    // h-screen aur overflow-hidden se scrolling band ho jayegi
     <div className="h-screen w-full bg-[#f6f7eb] flex items-center justify-center p-0 sm:p-4 lg:p-8 overflow-hidden font-sans">
       
-      <Toaster position="top-center" />
-
-      {/* Main Container - iski height h-full rakhi hai taaki screen mein fit rahe */}
       <div className="w-full max-w-6xl h-full lg:h-[85vh] grid grid-cols-1 lg:grid-cols-2 bg-white rounded-none lg:rounded-[2.5rem] overflow-hidden shadow-2xl border border-[#393e41]/5 relative z-10">
         
-        {/* --- LEFT SIDE: LOGIN FORM --- */}
         <div className="p-8 sm:p-12 lg:p-16 flex flex-col justify-center bg-white overflow-y-auto">
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6 lg:justify-start justify-center">
@@ -67,6 +77,7 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            
             <div className="space-y-1">
               <label className="text-xs font-bold text-[#393e41]/80 ml-1 uppercase tracking-wider">Email Address</label>
               <input
@@ -74,9 +85,14 @@ const Login = () => {
                 name="email"
                 placeholder="name@example.com"
                 onChange={handleChange}
-                className="w-full bg-[#f6f7eb] border-2 border-transparent text-[#393e41] p-4 rounded-xl focus:outline-none focus:border-[#e94f37] transition-all placeholder:text-[#393e41]/30"
-                required
+                className={`w-full bg-[#f6f7eb] border-2 text-[#393e41] p-4 rounded-xl focus:outline-none transition-all placeholder:text-[#393e41]/30 
+                  ${errors.email ? "border-red-500 focus:border-red-500 bg-red-50" : "border-transparent focus:border-[#e94f37]"}`}
               />
+              {errors.email && (
+                <p className="text-red-500 text-xs font-bold ml-1 flex items-center gap-1 animate-pulse">
+                  <AlertCircle size={12} /> {errors.email[0]}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -86,16 +102,28 @@ const Login = () => {
                 name="password"
                 placeholder="••••••••"
                 onChange={handleChange}
-                className="w-full bg-[#f6f7eb] border-2 border-transparent text-[#393e41] p-4 rounded-xl focus:outline-none focus:border-[#e94f37] transition-all placeholder:text-[#393e41]/30"
-                required
+                className={`w-full bg-[#f6f7eb] border-2 text-[#393e41] p-4 rounded-xl focus:outline-none transition-all placeholder:text-[#393e41]/30 
+                  ${errors.password ? "border-red-500 focus:border-red-500 bg-red-50" : "border-transparent focus:border-[#e94f37]"}`}
               />
+              {errors.password && (
+                <p className="text-red-500 text-xs font-bold ml-1 flex items-center gap-1 animate-pulse">
+                  <AlertCircle size={12} /> {errors.password[0]}
+                </p>
+              )}
             </div>
             
+            {generalError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm text-center font-bold animate-pulse">
+                {generalError}
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full bg-[#e94f37] hover:bg-[#d13d28] text-[#f6f7eb] font-bold py-4 rounded-xl shadow-lg shadow-[#e94f37]/20 transition-all duration-300 mt-2 active:scale-95"
+              disabled={loading}
+              className="w-full bg-[#e94f37] hover:bg-[#d13d28] text-[#f6f7eb] font-bold py-4 rounded-xl shadow-lg shadow-[#e94f37]/20 transition-all duration-300 mt-2 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Sign In
+              {loading ? "Signing In..." : "Sign In"}
             </button>
           </form>
 
@@ -104,14 +132,10 @@ const Login = () => {
           </p>
         </div>
 
-        {/* --- RIGHT SIDE: THEMED VISUAL (No Scroll) --- */}
         <div className="hidden lg:flex bg-[#393e41] flex-col items-center justify-center p-12 relative overflow-hidden">
-          
-          {/* Subtle Background Art */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#e94f37]/5 rounded-full blur-[100px]" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#f6f7eb]/5 rounded-full blur-[100px]" />
           
-          {/* Central Globe Logic */}
           <div className="relative mb-10 scale-90 xl:scale-100">
             <div className="absolute inset-0 bg-[#e94f37]/20 blur-[60px] rounded-full" />
             <Globe size={220} className="text-[#f6f7eb]/5 animate-[spin_40s_linear_infinite]" />
@@ -127,7 +151,6 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Badges */}
           <div className="flex gap-4 mt-12">
             <div className="bg-white/5 px-5 py-2 rounded-xl border border-white/5 flex items-center gap-2">
                 <ShieldCheck size={16} className="text-[#e94f37]" />
