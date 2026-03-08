@@ -33,8 +33,10 @@ const Register = () => {
 
     try {
       const res = await axios.post(`${BACKEND_URL}/api/auth/register`, formData);
+
+      console.log("Full Backend Response:", res.data);
       
-      if (res.data.success) {
+      if (res.status === 201) {
         
         navigate("/login");
       }
